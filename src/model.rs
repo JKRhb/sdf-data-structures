@@ -1,0 +1,256 @@
+use std::collections::HashMap;
+
+use derive_builder::Builder;
+use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
+
+#[skip_serializing_none]
+#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+pub struct InfoBlock {
+    // TODO: Add modified and features
+    #[builder(setter(into, strip_option), default)]
+    pub title: Option<String>,
+    #[builder(setter(into, strip_option), default)]
+    pub description: Option<String>,
+    #[builder(setter(into, strip_option), default)]
+    pub version: Option<String>,
+    #[builder(setter(into, strip_option), default)]
+    pub copyright: Option<String>,
+    #[builder(setter(into, strip_option), default)]
+    pub license: Option<String>,
+    #[builder(setter(into, strip_option), default)]
+    #[serde(rename = "$comment")]
+    pub comment: Option<String>,
+}
+
+#[skip_serializing_none]
+#[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CommonQualities {
+    #[builder(setter(into, strip_option), default)]
+    pub description: Option<String>,
+    #[builder(setter(into, strip_option), default)]
+    pub label: Option<String>,
+    #[builder(setter(into, strip_option), default)]
+    #[serde(rename = "$comment")]
+    pub comment: Option<String>,
+    #[builder(setter(into, strip_option), default)]
+    pub sdf_ref: Option<String>, // TODO: Add regex
+    #[builder(setter(into, strip_option), default)]
+    pub sdf_required: Option<Vec<String>>,
+}
+
+#[skip_serializing_none]
+#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SdfModel {
+    #[builder(setter(strip_option), default)]
+    pub info: Option<InfoBlock>,
+    #[builder(setter(into, strip_option), default)]
+    pub namespace: Option<HashMap<String, String>>,
+    #[builder(setter(into, strip_option), default)]
+    pub default_namespace: Option<String>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_thing: Option<HashMap<String, SdfThing>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_object: Option<HashMap<String, SdfObject>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_property: Option<HashMap<String, SdfProperty>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_action: Option<HashMap<String, SdfAction>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_event: Option<HashMap<String, SdfEvent>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_data: Option<HashMap<String, SdfData>>,
+}
+
+#[skip_serializing_none]
+#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SdfThing {
+    #[builder(setter(strip_option), default)]
+    pub sdf_thing: Option<HashMap<String, SdfThing>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_object: Option<HashMap<String, SdfObject>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_property: Option<HashMap<String, SdfProperty>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_action: Option<HashMap<String, SdfAction>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_event: Option<HashMap<String, SdfEvent>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_data: Option<HashMap<String, SdfData>>,
+
+    #[serde(flatten)]
+    #[builder(default)]
+    pub common_qualities: CommonQualities,
+}
+
+#[skip_serializing_none]
+#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SdfObject {
+    #[builder(setter(strip_option), default)]
+    pub sdf_property: Option<HashMap<String, SdfProperty>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_action: Option<HashMap<String, SdfAction>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_event: Option<HashMap<String, SdfEvent>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_data: Option<HashMap<String, SdfData>>,
+
+    #[serde(flatten)]
+    #[builder(default)]
+    pub common_qualities: CommonQualities,
+
+    #[builder(setter(strip_option), default)]
+    pub min_items: Option<u64>,
+    #[builder(setter(strip_option), default)]
+    pub max_items: Option<u64>,
+}
+
+#[skip_serializing_none]
+#[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SdfData {
+    #[serde(flatten)]
+    #[builder(default)]
+    pub common_qualities: CommonQualities,
+
+    #[builder(setter(strip_option), default)]
+    #[serde(flatten)]
+    pub r#type: Option<SchemaDefinition>,
+
+    #[builder(setter(into, strip_option), default)]
+    pub sdf_choice: Option<HashMap<String, SdfData>>,
+    #[builder(setter(strip_option), default)]
+    pub r#enum: Option<Vec<String>>,
+
+    #[builder(setter(strip_option), default)]
+    pub r#const: Option<serde_json::Value>,
+    #[builder(setter(strip_option), default)]
+    #[serde(rename = "default")]
+    pub default_value: Option<serde_json::Value>,
+}
+
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum SchemaDefinition {
+    Boolean,
+    String(StringSchema),
+    Integer(NumericSchema<i64>),
+    Number(NumericSchema<f64>),
+    Array(ArraySchema),
+    Object(ObjectSchema),
+}
+
+#[skip_serializing_none]
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Builder)]
+#[serde(rename_all = "camelCase")]
+pub struct StringSchema {
+    #[builder(setter(strip_option), default)]
+    pub min_length: Option<u64>,
+    #[builder(setter(strip_option), default)]
+    pub max_length: Option<u64>,
+    #[builder(setter(into, strip_option), default)]
+    pub pattern: Option<String>,
+    #[builder(setter(into, strip_option), default)]
+    pub format: Option<String>,
+}
+
+#[skip_serializing_none]
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Builder)]
+#[serde(rename_all = "camelCase")]
+pub struct NumericSchema<T> {
+    #[builder(setter(strip_option), default)]
+    pub minimum: Option<T>,
+    #[builder(setter(strip_option), default)]
+    pub maximum: Option<T>,
+    #[builder(setter(strip_option), default)]
+    pub exclusive_minimum: Option<T>,
+    #[builder(setter(strip_option), default)]
+    pub exclusive_maximum: Option<T>,
+    #[builder(setter(strip_option), default)]
+    pub multiple_of: Option<T>,
+}
+
+#[skip_serializing_none]
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Builder)]
+#[serde(rename_all = "camelCase")]
+pub struct ArraySchema {
+    #[builder(setter(strip_option), default)]
+    pub min_items: Option<u64>,
+    #[builder(setter(strip_option), default)]
+    pub max_items: Option<u64>,
+    #[builder(setter(strip_option), default)]
+    pub unique_items: Option<bool>,
+}
+
+#[skip_serializing_none]
+#[derive(PartialEq, Serialize, Deserialize, Debug, Clone, Builder)]
+#[serde(rename_all = "camelCase")]
+pub struct ObjectSchema {
+    #[builder(setter(into, strip_option), default)]
+    pub required: Option<Vec<String>>,
+    #[builder(setter(into, strip_option), default)]
+    pub properties: Option<HashMap<String, SdfData>>,
+}
+
+#[inline]
+fn bool_true() -> bool {
+    true
+}
+
+#[inline]
+fn skip_bool_true(value: &bool) -> bool {
+    *value
+}
+
+#[skip_serializing_none]
+#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+pub struct SdfProperty {
+    #[serde(flatten)]
+    #[builder(default)]
+    pub internal_data: SdfData,
+
+    #[builder(setter(strip_option), default = "true")]
+    // TODO: Refactor this
+    #[serde(default = "bool_true", skip_serializing_if = "skip_bool_true")]
+    pub readable: bool,
+    #[builder(setter(strip_option), default = "true")]
+    #[serde(default = "bool_true", skip_serializing_if = "skip_bool_true")]
+    pub writable: bool,
+    #[builder(setter(strip_option), default = "true")]
+    #[serde(default = "bool_true", skip_serializing_if = "skip_bool_true")]
+    pub observable: bool,
+}
+
+#[skip_serializing_none]
+#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SdfAction {
+    #[serde(flatten)]
+    #[builder(default)]
+    pub common_qualities: CommonQualities,
+
+    #[builder(setter(strip_option), default)]
+    pub sdf_data: Option<HashMap<String, SdfData>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_input_data: Option<SdfData>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_output_data: Option<SdfData>,
+}
+
+#[skip_serializing_none]
+#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SdfEvent {
+    #[serde(flatten)]
+    #[builder(default)]
+    pub common_qualities: CommonQualities,
+
+    #[builder(setter(strip_option), default)]
+    pub sdf_data: Option<HashMap<String, SdfData>>,
+    #[builder(setter(strip_option), default)]
+    pub sdf_output_data: Option<SdfData>,
+}
