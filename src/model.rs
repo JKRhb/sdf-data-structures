@@ -254,3 +254,56 @@ pub struct SdfEvent {
     #[builder(setter(strip_option), default)]
     pub sdf_output_data: Option<SdfData>,
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn test_common_qualities() {
+        let common_qualities = CommonQualitiesBuilder::default()
+            .comment("This is a comment")
+            .build()
+            .unwrap();
+
+        let serialized_common_qualities = "{\"$comment\":\"This is a comment\"}".to_string();
+
+        assert_eq!(
+            serde_json::to_string(&common_qualities).unwrap(),
+            serialized_common_qualities
+        );
+    }
+
+    #[test]
+    fn test_sdf_property() {
+        let sdf_property = SdfPropertyBuilder::default()
+            .writable(false)
+            .build()
+            .unwrap();
+
+        let serialized_sdf_property = "{\"writable\":false}".to_string();
+
+        assert_eq!(
+            serde_json::to_string(&sdf_property).unwrap(),
+            serialized_sdf_property
+        );
+    }
+
+    #[test]
+    fn test_const_and_default() {
+        let sdf_data = SdfDataBuilder::default()
+            .r#const(serde_json::Value::Null)
+            .default_value(json!(5))
+            .build()
+            .unwrap();
+
+        let serialized_sdf_property = "{\"const\":null,\"default\":5}".to_string();
+
+        assert_eq!(
+            serde_json::to_string(&sdf_data).unwrap(),
+            serialized_sdf_property
+        );
+    }
+}

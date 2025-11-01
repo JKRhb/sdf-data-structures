@@ -162,3 +162,48 @@ pub struct ProtocolInstanceMap {
     #[builder(setter(strip_option), default)]
     pub coap: Option<CoapInstanceMap>,
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn test_sdf_instance() {
+        let sdf_instance = SdfInstanceMessageBuilder::default()
+            .namespace([("sensors".into(), "https://example.com/sensors".into())])
+            .default_namespace("sensors")
+            .info(
+                InfoBlockBuilder::default()
+                    .message_id("75532020-8f64-4daf-a241-fcb0b6dc4a44")
+                    .build()
+                    .unwrap(),
+            )
+            .sdf_instance_of(
+                SdfInstanceOfBuilder::default()
+                    .model("sensors:#/sdfObject/envSensor")
+                    .build()
+                    .unwrap(),
+            )
+            .sdf_instance(
+                SdfInstanceBuilder::default()
+                    .sdf_context([("installationInfo".into(), json!({"mountType": "ceiling"}))])
+                    .sdf_property([(
+                        "status".to_string(),
+                        serde_json::Value::String("operational".into()),
+                    )])
+                    .build()
+                    .unwrap(),
+            )
+            .build()
+            .unwrap();
+
+        let serialized_sdf_instance = "{\"info\":{\"messageId\":\"75532020-8f64-4daf-a241-fcb0b6dc4a44\"},\"namespace\":{\"sensors\":\"https://example.com/sensors\"},\"defaultNamespace\":\"sensors\",\"sdfInstanceOf\":{\"model\":\"sensors:#/sdfObject/envSensor\"},\"sdfInstance\":{\"sdfProperty\":{\"status\":\"operational\"},\"sdfContext\":{\"installationInfo\":{\"mountType\":\"ceiling\"}}}}".to_string();
+
+        assert_eq!(
+            serde_json::to_string(&sdf_instance).unwrap(),
+            serialized_sdf_instance
+        );
+    }
+}
