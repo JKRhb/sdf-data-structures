@@ -57,8 +57,6 @@ pub struct SdfInstanceMessage {
     #[builder(setter(into, strip_option))]
     pub sdf_instance_of: SdfInstanceOf,
     pub sdf_instance: SdfInstance,
-    #[builder(setter(into, strip_option), default)]
-    pub sdf_binding: Option<HashMap<String, SdfBinding>>,
 }
 
 #[skip_serializing_none]
@@ -86,26 +84,6 @@ pub struct SdfInstance {
     // pub sdf_action: Option<HashMap<String, InteractionAffordance>>,
     // #[builder(setter(strip_option), default)]
     // pub sdf_event: Option<HashMap<String, InteractionAffordance>>,
-    #[serde(flatten)]
-    #[builder(default)]
-    pub common_qualities: CommonQualities,
-}
-
-#[skip_serializing_none]
-#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct SdfBinding {
-    #[builder(setter(into, strip_option), default)]
-    pub sdf_thing: Option<HashMap<String, SdfBinding>>,
-    #[builder(setter(into, strip_option), default)]
-    pub sdf_object: Option<HashMap<String, SdfBinding>>,
-    #[builder(setter(into, strip_option), default)]
-    pub sdf_property: Option<HashMap<String, InteractionAffordance>>,
-    #[builder(setter(into, strip_option), default)]
-    pub sdf_action: Option<HashMap<String, InteractionAffordance>>,
-    #[builder(setter(into, strip_option), default)]
-    pub sdf_event: Option<HashMap<String, InteractionAffordance>>,
-
     #[serde(flatten)]
     #[builder(default)]
     pub common_qualities: CommonQualities,
