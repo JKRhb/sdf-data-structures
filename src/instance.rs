@@ -64,7 +64,7 @@ pub struct SdfInstanceMessage {
 #[serde(rename_all = "camelCase")]
 pub struct SdfInstanceOf {
     #[builder(setter(into))]
-    model: String,
+    pub model: String,
 }
 
 #[skip_serializing_none]
