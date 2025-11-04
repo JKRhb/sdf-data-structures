@@ -4,6 +4,11 @@ use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
+pub enum JsonPointerResolutionResult {
+    InfoBlock(InfoBlock),
+    SdfObject(SdfObject),
+}
+
 #[skip_serializing_none]
 #[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
 pub struct InfoBlock {
@@ -253,6 +258,34 @@ pub struct SdfEvent {
     pub sdf_data: Option<HashMap<String, SdfData>>,
     #[builder(setter(strip_option), default)]
     pub sdf_output_data: Option<SdfData>,
+}
+
+impl SdfModel {
+    pub fn resolve_json_pointer(self: Self, json_pointer: String) -> JsonPointerResolutionResult {
+        if !json_pointer.starts_with("/") {
+            panic!()
+        }
+
+        let mut segment_iterator = json_pointer[1..].split("/");
+
+        let first_path_segment = segment_iterator.next().unwrap();
+        let second_path_segment = segment_iterator.next().unwrap();
+
+        match first_path_segment {
+            "sdfObject" => {
+                let sdf_objects = self.sdf_object.unwrap();
+
+                let sdf_object = sdf_objects.get(second_path_segment).unwrap();
+
+                // TODO: Start recursion here
+
+                JsonPointerResolutionResult::SdfObject(sdf_object.clone())
+            }
+            _ => {
+                panic!();
+            }
+        }
+    }
 }
 
 #[cfg(test)]
