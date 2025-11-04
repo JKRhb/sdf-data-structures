@@ -4,6 +4,7 @@ use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
+#[derive(Debug, Clone)]
 pub enum JsonPointerResolutionResult {
     InfoBlock(InfoBlock),
     SdfObject(SdfObject),
