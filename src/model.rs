@@ -1,155 +1,11 @@
 use std::collections::HashMap;
 
 use derive_builder::Builder;
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
-#[derive(PartialEq, Debug, Clone)]
-pub enum JsonPointerResolutionResult {
-    InfoBlock(InfoBlock),
-    SdfObject(SdfObject),
-    SdfThing(SdfThing),
-    SdfProperty(SdfProperty),
-    SdfAction(SdfAction),
-    SdfEvent(SdfEvent),
-    SdfData(SdfData),
-    SchemaDefinition(SchemaDefinition),
-    SdfModel(SdfModel),
-    Map(HashMap<String, JsonPointerResolutionResult>),
-    Value(serde_json::Value),
-}
-
-pub trait JsonPointerResolvable {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult>;
-}
-
-// TODO: Refactor the following implementations
-impl JsonPointerResolvable for HashMap<String, SdfThing> {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        match json_pointer.split("/").next() {
-            None => Some(JsonPointerResolutionResult::Map(
-                self.iter()
-                    .map(|(key, value)| {
-                        (
-                            key.clone(),
-                            JsonPointerResolutionResult::SdfThing(value.clone()),
-                        )
-                    })
-                    .collect(),
-            )),
-            Some(first_path_segment) => self
-                .get(first_path_segment)?
-                .clone()
-                .resolve_json_pointer(json_pointer),
-        }
-    }
-}
-
-impl JsonPointerResolvable for HashMap<String, SdfObject> {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        match json_pointer.split("/").next() {
-            None => Some(JsonPointerResolutionResult::Map(
-                self.iter()
-                    .map(|(key, value)| {
-                        (
-                            key.clone(),
-                            JsonPointerResolutionResult::SdfObject(value.clone()),
-                        )
-                    })
-                    .collect(),
-            )),
-            Some(first_path_segment) => self
-                .get(first_path_segment)?
-                .clone()
-                .resolve_json_pointer(json_pointer),
-        }
-    }
-}
-
-impl JsonPointerResolvable for HashMap<String, SdfProperty> {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        match json_pointer.split("/").next() {
-            None => Some(JsonPointerResolutionResult::Map(
-                self.iter()
-                    .map(|(key, value)| {
-                        (
-                            key.clone(),
-                            JsonPointerResolutionResult::SdfProperty(value.clone()),
-                        )
-                    })
-                    .collect(),
-            )),
-            Some(first_path_segment) => self
-                .get(first_path_segment)?
-                .clone()
-                .resolve_json_pointer(json_pointer),
-        }
-    }
-}
-
-impl JsonPointerResolvable for HashMap<String, SdfAction> {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        match json_pointer.split("/").next() {
-            None => Some(JsonPointerResolutionResult::Map(
-                self.iter()
-                    .map(|(key, value)| {
-                        (
-                            key.clone(),
-                            JsonPointerResolutionResult::SdfAction(value.clone()),
-                        )
-                    })
-                    .collect(),
-            )),
-            Some(first_path_segment) => self
-                .get(first_path_segment)?
-                .clone()
-                .resolve_json_pointer(json_pointer),
-        }
-    }
-}
-
-impl JsonPointerResolvable for HashMap<String, SdfEvent> {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        match json_pointer.split("/").next() {
-            None => Some(JsonPointerResolutionResult::Map(
-                self.iter()
-                    .map(|(key, value)| {
-                        (
-                            key.clone(),
-                            JsonPointerResolutionResult::SdfEvent(value.clone()),
-                        )
-                    })
-                    .collect(),
-            )),
-            Some(first_path_segment) => self
-                .get(first_path_segment)?
-                .clone()
-                .resolve_json_pointer(json_pointer),
-        }
-    }
-}
-
-impl JsonPointerResolvable for HashMap<String, SdfData> {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        match json_pointer.split("/").next() {
-            None => Some(JsonPointerResolutionResult::Map(
-                self.iter()
-                    .map(|(key, value)| {
-                        (
-                            key.clone(),
-                            JsonPointerResolutionResult::SdfData(value.clone()),
-                        )
-                    })
-                    .collect(),
-            )),
-            Some(first_path_segment) => self
-                .get(first_path_segment)?
-                .clone()
-                .resolve_json_pointer(json_pointer),
-        }
-    }
-}
+// #[serde(flatten)]
+// extra: HashMap<String, Value>,
 
 #[skip_serializing_none]
 #[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
@@ -168,38 +24,6 @@ pub struct InfoBlock {
     #[builder(setter(into, strip_option), default)]
     #[serde(rename = "$comment")]
     pub comment: Option<String>,
-}
-
-impl JsonPointerResolvable for InfoBlock {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        let mut segment_iterator = json_pointer.split("/");
-
-        match segment_iterator.next() {
-            Some(first_path_segment) => match first_path_segment {
-                "" => Some(JsonPointerResolutionResult::InfoBlock(self)),
-                "$comment" => {
-                    JsonPointerResolutionResult::Value(serde_json::json!(self.comment)).into()
-                }
-                "copyright" => {
-                    JsonPointerResolutionResult::Value(serde_json::json!(self.copyright)).into()
-                }
-                "description" => {
-                    JsonPointerResolutionResult::Value(serde_json::json!(self.description)).into()
-                }
-                "license" => {
-                    JsonPointerResolutionResult::Value(serde_json::json!(self.license)).into()
-                }
-                "title" => JsonPointerResolutionResult::Value(serde_json::json!(self.title)).into(),
-                "version" => {
-                    JsonPointerResolutionResult::Value(serde_json::json!(self.version)).into()
-                }
-
-                _ => None,
-            },
-
-            None => None,
-        }
-    }
 }
 
 #[skip_serializing_none]
@@ -265,26 +89,6 @@ pub struct SdfThing {
     pub common_qualities: CommonQualities,
 }
 
-impl JsonPointerResolvable for SdfThing {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        let mut segment_iterator = json_pointer.split("/");
-
-        match segment_iterator.next() {
-            None => Some(JsonPointerResolutionResult::SdfThing(self.clone())),
-            Some(first_path_segment) => {
-                let json_pointer = segment_iterator.join("/");
-
-                match first_path_segment {
-                    "sdfAction" => self.sdf_action?.resolve_json_pointer(json_pointer),
-                    _ => {
-                        panic!();
-                    }
-                }
-            }
-        }
-    }
-}
-
 #[skip_serializing_none]
 #[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -306,30 +110,6 @@ pub struct SdfObject {
     pub min_items: Option<u64>,
     #[builder(setter(strip_option), default)]
     pub max_items: Option<u64>,
-}
-
-impl JsonPointerResolvable for SdfObject {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        let mut segment_iterator = json_pointer.split("/");
-
-        match segment_iterator.next() {
-            Some(first_path_segment) => {
-                let json_pointer = segment_iterator.join("/");
-
-                match first_path_segment {
-                    "sdfProperty" => self.sdf_property?.resolve_json_pointer(json_pointer),
-                    "sdfAction" => self.sdf_action?.resolve_json_pointer(json_pointer),
-                    "sdfEvent" => self.sdf_event?.resolve_json_pointer(json_pointer),
-                    "sdfData" => self.sdf_data?.resolve_json_pointer(json_pointer),
-                    _ => {
-                        panic!();
-                    }
-                }
-            }
-
-            None => Some(JsonPointerResolutionResult::SdfObject(self.clone())),
-        }
-    }
 }
 
 #[skip_serializing_none]
@@ -356,34 +136,6 @@ pub struct SdfData {
     pub default_value: Option<serde_json::Value>,
 }
 
-impl JsonPointerResolvable for SdfData {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        let mut segment_iterator = json_pointer.split("/");
-
-        match segment_iterator.next() {
-            None => Some(JsonPointerResolutionResult::SdfData(self.clone())),
-            Some(first_path_segment) => {
-                let json_pointer = segment_iterator.join("/");
-
-                if let Some(yeah) = self.r#type {
-                    let yo = yeah.resolve_json_pointer(json_pointer);
-
-                    if yo.is_some() {
-                        return yo;
-                    }
-                }
-
-                match first_path_segment {
-                    "type" => Some(JsonPointerResolutionResult::Value(serde_json::json!(
-                        first_path_segment
-                    ))),
-                    _ => None,
-                }
-            }
-        }
-    }
-}
-
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum SchemaDefinition {
@@ -393,24 +145,6 @@ pub enum SchemaDefinition {
     Number(NumericSchema<f64>),
     Array(ArraySchema),
     Object(ObjectSchema),
-}
-
-impl JsonPointerResolvable for SchemaDefinition {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        let first_segment = json_pointer.split("/").next();
-
-        match first_segment {
-            None => None,
-            // TODO: Differentiate by different schema type
-            Some(first_segment) => Some(JsonPointerResolutionResult::Value(
-                serde_json::to_value(self)
-                    .ok()?
-                    .as_object()?
-                    .get(first_segment)?
-                    .clone(),
-            )),
-        }
-    }
 }
 
 #[skip_serializing_none]
@@ -493,20 +227,6 @@ pub struct SdfProperty {
     #[serde(default = "bool_true", skip_serializing_if = "skip_bool_true")]
     pub observable: bool,
 }
-
-impl JsonPointerResolvable for SdfProperty {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        let mut segment_iterator = json_pointer.split("/");
-
-        match segment_iterator.next() {
-            Some(first_path_segment) => match first_path_segment {
-                _ => self.internal_data.resolve_json_pointer(json_pointer),
-            },
-            None => Some(JsonPointerResolutionResult::SdfProperty(self)),
-        }
-    }
-}
-
 #[skip_serializing_none]
 #[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -523,29 +243,6 @@ pub struct SdfAction {
     pub sdf_output_data: Option<SdfData>,
 }
 
-impl JsonPointerResolvable for SdfAction {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        let mut segment_iterator = json_pointer.split("/");
-
-        match segment_iterator.next() {
-            Some(first_path_segment) => {
-                let json_pointer = segment_iterator.join("/");
-
-                match first_path_segment {
-                    "sdfInputData" => self.sdf_output_data?.resolve_json_pointer(json_pointer),
-                    "sdfOutputData" => self.sdf_output_data?.resolve_json_pointer(json_pointer),
-                    "sdfData" => self.sdf_data?.resolve_json_pointer(json_pointer),
-                    _ => {
-                        panic!();
-                    }
-                }
-            }
-
-            None => Some(JsonPointerResolutionResult::SdfAction(self.clone())),
-        }
-    }
-}
-
 #[skip_serializing_none]
 #[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -558,70 +255,6 @@ pub struct SdfEvent {
     pub sdf_data: Option<HashMap<String, SdfData>>,
     #[builder(setter(strip_option), default)]
     pub sdf_output_data: Option<SdfData>,
-}
-
-impl JsonPointerResolvable for SdfEvent {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        let mut segment_iterator = json_pointer.split("/");
-
-        match segment_iterator.next() {
-            Some(first_path_segment) => {
-                let json_pointer = segment_iterator.join("/");
-
-                match first_path_segment {
-                    "sdfOutputData" => self.sdf_output_data?.resolve_json_pointer(json_pointer),
-                    "sdfData" => self.sdf_data?.resolve_json_pointer(json_pointer),
-                    _ => {
-                        panic!()
-                    }
-                }
-            }
-
-            None => Some(JsonPointerResolutionResult::SdfEvent(self.clone())),
-        }
-    }
-}
-
-impl JsonPointerResolvable for SdfModel {
-    fn resolve_json_pointer(self, json_pointer: String) -> Option<JsonPointerResolutionResult> {
-        let start_index: usize;
-        if json_pointer.starts_with("#:/") {
-            start_index = 3
-        } else if json_pointer.starts_with("#/") {
-            start_index = 2
-        } else if json_pointer.starts_with("/") {
-            start_index = 1;
-        } else {
-            start_index = 0;
-        }
-
-        println!("{}", start_index);
-
-        let mut segment_iterator = json_pointer[start_index..].split("/");
-
-        match segment_iterator.next() {
-            None => Some(JsonPointerResolutionResult::SdfModel(self.clone())),
-            Some(first_path_segment) => {
-                let json_pointer = segment_iterator.join("/");
-
-                println!("{}", first_path_segment);
-                println!("{}", json_pointer);
-
-                match first_path_segment {
-                    "info" => self.info?.resolve_json_pointer(json_pointer),
-                    "sdfObject" => self.sdf_object?.resolve_json_pointer(json_pointer),
-                    "sdfThing" => self.sdf_thing?.resolve_json_pointer(json_pointer),
-                    "sdfAction" => self.sdf_action?.resolve_json_pointer(json_pointer),
-                    "sdfProperty" => self.sdf_property?.resolve_json_pointer(json_pointer),
-                    "sdfEvent" => self.sdf_event?.resolve_json_pointer(json_pointer),
-                    "sdfData" => self.sdf_data?.resolve_json_pointer(json_pointer),
-                    _ => {
-                        panic!();
-                    }
-                }
-            }
-        }
-    }
 }
 
 #[cfg(test)]
@@ -673,64 +306,6 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&sdf_data).unwrap(),
             serialized_sdf_property
-        );
-    }
-
-    #[test]
-    fn test_json_pointers() {
-        let sdf_model = SdfModel::deserialize(serde_json::json!({
-          "info": {
-            "title": "Example document for SDF (Semantic Definition Format)",
-            "version": "2019-04-24",
-            "copyright": "Copyright 2019 Example Corp. All rights reserved.",
-            "license": "https://example.com/license"
-          },
-          "namespace": {
-            "cap": "https://example.com/capability/cap"
-          },
-          "defaultNamespace": "cap",
-          "sdfObject": {
-            "Switch": {
-              "sdfProperty": {
-                "value": {
-                  "description":
-        "The state of the switch; false for off and true for on.",
-                  "type": "boolean"
-                }
-              },
-              "sdfAction": {
-                "on": {
-                  "description":
-        "Turn the switch on; equivalent to setting value to true."
-                },
-                "off": {
-                  "description":
-        "Turn the switch off; equivalent to setting value to false."
-                },
-                "toggle": {
-                  "description":
-        "Toggle the switch; equivalent to setting value to its complement."
-                }
-              }
-            }
-          }
-        }))
-        .unwrap();
-
-        let info = sdf_model
-            .resolve_json_pointer("#:/info".to_string())
-            .unwrap();
-
-        assert_eq!(
-            JsonPointerResolutionResult::InfoBlock(InfoBlock {
-                title: Some("Example document for SDF (Semantic Definition Format)".into()),
-                description: None,
-                version: Some("2019-04-24".into()),
-                copyright: Some("Copyright 2019 Example Corp. All rights reserved.".into()),
-                license: Some("https://example.com/license".into()),
-                comment: None
-            }),
-            info
         );
     }
 }
