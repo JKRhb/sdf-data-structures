@@ -390,7 +390,8 @@ mod tests {
                 version: Some("2019-04-24".into()),
                 copyright: Some("Copyright 2019 Example Corp. All rights reserved.".into()),
                 license: Some("https://example.com/license".into()),
-                comment: None
+                comment: None,
+                additional_qualities: None,
             }),
             info
         );

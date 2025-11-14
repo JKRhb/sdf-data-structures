@@ -2,10 +2,8 @@ use std::collections::HashMap;
 
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use serde_with::skip_serializing_none;
-
-// #[serde(flatten)]
-// extra: HashMap<String, Value>,
 
 #[skip_serializing_none]
 #[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
@@ -24,6 +22,9 @@ pub struct InfoBlock {
     #[builder(setter(into, strip_option), default)]
     #[serde(rename = "$comment")]
     pub comment: Option<String>,
+    #[serde(flatten, deserialize_with = "none_extra")]
+    #[builder(setter(into, strip_option), default)]
+    pub additional_qualities: Option<HashMap<String, Value>>,
 }
 
 #[skip_serializing_none]
@@ -65,6 +66,9 @@ pub struct SdfModel {
     pub sdf_event: Option<HashMap<String, SdfEvent>>,
     #[builder(setter(strip_option), default)]
     pub sdf_data: Option<HashMap<String, SdfData>>,
+    #[serde(flatten, deserialize_with = "none_extra")]
+    #[builder(setter(into, strip_option), default)]
+    pub additional_qualities: Option<HashMap<String, Value>>,
 }
 
 #[skip_serializing_none]
@@ -87,6 +91,9 @@ pub struct SdfThing {
     #[serde(flatten)]
     #[builder(default)]
     pub common_qualities: CommonQualities,
+    #[serde(flatten, deserialize_with = "none_extra")]
+    #[builder(setter(into, strip_option), default)]
+    pub additional_qualities: Option<HashMap<String, Value>>,
 }
 
 #[skip_serializing_none]
@@ -110,6 +117,9 @@ pub struct SdfObject {
     pub min_items: Option<u64>,
     #[builder(setter(strip_option), default)]
     pub max_items: Option<u64>,
+    #[serde(flatten, deserialize_with = "none_extra")]
+    #[builder(setter(into, strip_option), default)]
+    pub additional_qualities: Option<HashMap<String, Value>>,
 }
 
 #[skip_serializing_none]
@@ -134,6 +144,9 @@ pub struct SdfData {
     #[builder(setter(strip_option), default)]
     #[serde(rename = "default")]
     pub default_value: Option<serde_json::Value>,
+    #[serde(flatten, deserialize_with = "none_extra")]
+    #[builder(setter(into, strip_option), default)]
+    pub additional_qualities: Option<HashMap<String, Value>>,
 }
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
@@ -241,6 +254,9 @@ pub struct SdfAction {
     pub sdf_input_data: Option<SdfData>,
     #[builder(setter(strip_option), default)]
     pub sdf_output_data: Option<SdfData>,
+    #[serde(flatten, deserialize_with = "none_extra")]
+    #[builder(setter(into, strip_option), default)]
+    pub additional_qualities: Option<HashMap<String, Value>>,
 }
 
 #[skip_serializing_none]
@@ -255,6 +271,18 @@ pub struct SdfEvent {
     pub sdf_data: Option<HashMap<String, SdfData>>,
     #[builder(setter(strip_option), default)]
     pub sdf_output_data: Option<SdfData>,
+    #[serde(flatten)]
+    #[builder(setter(into), default)]
+    pub additional_qualities: HashMap<String, Value>,
+}
+
+// TODO: Move to utils
+pub fn none_extra<'de, D>(deserializer: D) -> Result<Option<HashMap<String, Value>>, D::Error>
+where
+    D: serde::de::Deserializer<'de>,
+{
+    let s = HashMap::deserialize(deserializer)?;
+    Ok((s.len() != 0).then_some(s))
 }
 
 #[cfg(test)]
