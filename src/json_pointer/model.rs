@@ -336,7 +336,10 @@ impl JsonPointerResolvable<ModelResult> for SdfThing {
 mod tests {
     use serde::Deserialize;
 
-    use crate::{json_pointer::{JsonPointerResolvable, model::ModelResult}, model::{InfoBlock, SdfModel}};
+    use crate::{
+        json_pointer::{JsonPointerResolvable, model::ModelResult},
+        model::{InfoBlock, SdfModel},
+    };
 
     #[test]
     fn test_json_pointers() {
