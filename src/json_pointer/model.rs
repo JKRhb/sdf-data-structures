@@ -25,6 +25,10 @@ pub enum ModelResult {
     Value(serde_json::Value),
 }
 
+fn create_model_result_value(value: serde_json::Value) -> Option<ModelResult> {
+    Some(ModelResult::Value(value))
+}
+
 // TODO: Refactor the following implementations
 impl JsonPointerResolvable<ModelResult> for HashMap<String, SdfThing> {
     fn resolve_json_pointer(self, json_pointer: String) -> Option<ModelResult> {
@@ -127,19 +131,21 @@ impl JsonPointerResolvable<ModelResult> for InfoBlock {
         let mut segment_iterator = json_pointer.split("/");
 
         match segment_iterator.next() {
+            None => Some(ModelResult::InfoBlock(self)),
             Some(first_path_segment) => match first_path_segment {
                 "" => Some(ModelResult::InfoBlock(self)),
-                "$comment" => ModelResult::Value(serde_json::json!(self.comment)).into(),
-                "copyright" => ModelResult::Value(serde_json::json!(self.copyright)).into(),
-                "description" => ModelResult::Value(serde_json::json!(self.description)).into(),
-                "license" => ModelResult::Value(serde_json::json!(self.license)).into(),
-                "title" => ModelResult::Value(serde_json::json!(self.title)).into(),
-                "version" => ModelResult::Value(serde_json::json!(self.version)).into(),
+                "$comment" => create_model_result_value(self.comment.into()),
+                "copyright" => create_model_result_value(self.copyright.into()),
+                "description" => create_model_result_value(self.description.into()),
+                "license" => create_model_result_value(self.license.into()),
+                "title" => create_model_result_value(self.title.into()),
+                "version" => create_model_result_value(self.version.into()),
 
-                _ => None,
+                _ => ModelResult::Value(serde_json::json!(
+                    self.additional_qualities?.get(first_path_segment)
+                ))
+                .into(),
             },
-
-            None => None,
         }
     }
 }
@@ -157,9 +163,7 @@ impl JsonPointerResolvable<ModelResult> for SdfObject {
                     "sdfAction" => self.sdf_action?.resolve_json_pointer(json_pointer),
                     "sdfEvent" => self.sdf_event?.resolve_json_pointer(json_pointer),
                     "sdfData" => self.sdf_data?.resolve_json_pointer(json_pointer),
-                    _ => {
-                        panic!();
-                    }
+                    _ => None,
                 }
             }
 
@@ -177,11 +181,11 @@ impl JsonPointerResolvable<ModelResult> for SdfData {
             Some(first_path_segment) => {
                 let json_pointer = segment_iterator.join("/");
 
-                if let Some(yeah) = self.r#type {
-                    let yo = yeah.resolve_json_pointer(json_pointer);
+                if let Some(schema_definition) = self.r#type {
+                    let model_result = schema_definition.resolve_json_pointer(json_pointer);
 
-                    if yo.is_some() {
-                        return yo;
+                    if model_result.is_some() {
+                        return model_result;
                     }
                 }
 

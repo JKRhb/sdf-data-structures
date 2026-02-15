@@ -15,16 +15,22 @@ pub struct InfoBlock {
     #[builder(setter(into, strip_option), default)]
     pub version: Option<String>,
     #[builder(setter(into, strip_option), default)]
+    pub modified: Option<String>,
+    #[builder(setter(into, strip_option), default)]
     pub copyright: Option<String>,
     #[builder(setter(into, strip_option), default)]
     pub license: Option<String>,
-    #[builder(setter(into, strip_option), default)]
-    #[serde(rename = "$comment")]
-    pub comment: Option<String>,
 
     #[builder(setter(into))]
     pub message_id: String,
-    // TODO: Add modified and features
+    #[builder(setter(into, strip_option), default)]
+    pub previous_message_id: Option<String>,
+
+    #[builder(setter(into, strip_option), default)]
+    pub features: Option<Vec<String>>,
+    #[builder(setter(into, strip_option), default)]
+    #[serde(rename = "$comment")]
+    pub comment: Option<String>,
 }
 
 #[skip_serializing_none]
