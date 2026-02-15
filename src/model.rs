@@ -2,16 +2,11 @@ use std::collections::HashMap;
 
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use serde_with::skip_serializing_none;
 
-#[derive(Debug, Clone)]
-pub enum JsonPointerResolutionResult {
-    InfoBlock(InfoBlock),
-    SdfObject(SdfObject),
-}
-
 #[skip_serializing_none]
-#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
 pub struct InfoBlock {
     // TODO: Add modified and features
     #[builder(setter(into, strip_option), default)]
@@ -27,6 +22,9 @@ pub struct InfoBlock {
     #[builder(setter(into, strip_option), default)]
     #[serde(rename = "$comment")]
     pub comment: Option<String>,
+    #[serde(flatten, deserialize_with = "none_extra")]
+    #[builder(setter(into, strip_option), default)]
+    pub additional_qualities: Option<HashMap<String, Value>>,
 }
 
 #[skip_serializing_none]
@@ -47,7 +45,7 @@ pub struct CommonQualities {
 }
 
 #[skip_serializing_none]
-#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SdfModel {
     #[builder(setter(strip_option), default)]
@@ -68,10 +66,13 @@ pub struct SdfModel {
     pub sdf_event: Option<HashMap<String, SdfEvent>>,
     #[builder(setter(strip_option), default)]
     pub sdf_data: Option<HashMap<String, SdfData>>,
+    #[serde(flatten, deserialize_with = "none_extra")]
+    #[builder(setter(into, strip_option), default)]
+    pub additional_qualities: Option<HashMap<String, Value>>,
 }
 
 #[skip_serializing_none]
-#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SdfThing {
     #[builder(setter(strip_option), default)]
@@ -90,10 +91,13 @@ pub struct SdfThing {
     #[serde(flatten)]
     #[builder(default)]
     pub common_qualities: CommonQualities,
+    #[serde(flatten, deserialize_with = "none_extra")]
+    #[builder(setter(into, strip_option), default)]
+    pub additional_qualities: Option<HashMap<String, Value>>,
 }
 
 #[skip_serializing_none]
-#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SdfObject {
     #[builder(setter(strip_option), default)]
@@ -113,6 +117,9 @@ pub struct SdfObject {
     pub min_items: Option<u64>,
     #[builder(setter(strip_option), default)]
     pub max_items: Option<u64>,
+    #[serde(flatten, deserialize_with = "none_extra")]
+    #[builder(setter(into, strip_option), default)]
+    pub additional_qualities: Option<HashMap<String, Value>>,
 }
 
 #[skip_serializing_none]
@@ -137,6 +144,9 @@ pub struct SdfData {
     #[builder(setter(strip_option), default)]
     #[serde(rename = "default")]
     pub default_value: Option<serde_json::Value>,
+    #[serde(flatten, deserialize_with = "none_extra")]
+    #[builder(setter(into, strip_option), default)]
+    pub additional_qualities: Option<HashMap<String, Value>>,
 }
 
 #[derive(PartialEq, Serialize, Deserialize, Debug, Clone)]
@@ -213,7 +223,7 @@ fn skip_bool_true(value: &bool) -> bool {
 }
 
 #[skip_serializing_none]
-#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
 pub struct SdfProperty {
     #[serde(flatten)]
     #[builder(default)]
@@ -230,9 +240,8 @@ pub struct SdfProperty {
     #[serde(default = "bool_true", skip_serializing_if = "skip_bool_true")]
     pub observable: bool,
 }
-
 #[skip_serializing_none]
-#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SdfAction {
     #[serde(flatten)]
@@ -245,10 +254,13 @@ pub struct SdfAction {
     pub sdf_input_data: Option<SdfData>,
     #[builder(setter(strip_option), default)]
     pub sdf_output_data: Option<SdfData>,
+    #[serde(flatten, deserialize_with = "none_extra")]
+    #[builder(setter(into, strip_option), default)]
+    pub additional_qualities: Option<HashMap<String, Value>>,
 }
 
 #[skip_serializing_none]
-#[derive(Default, Serialize, Deserialize, Debug, Builder, Clone)]
+#[derive(PartialEq, Default, Serialize, Deserialize, Debug, Builder, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SdfEvent {
     #[serde(flatten)]
@@ -259,34 +271,18 @@ pub struct SdfEvent {
     pub sdf_data: Option<HashMap<String, SdfData>>,
     #[builder(setter(strip_option), default)]
     pub sdf_output_data: Option<SdfData>,
+    #[serde(flatten)]
+    #[builder(setter(into), default)]
+    pub additional_qualities: HashMap<String, Value>,
 }
 
-impl SdfModel {
-    pub fn resolve_json_pointer(self: Self, json_pointer: String) -> JsonPointerResolutionResult {
-        if !json_pointer.starts_with("/") {
-            panic!()
-        }
-
-        let mut segment_iterator = json_pointer[1..].split("/");
-
-        let first_path_segment = segment_iterator.next().unwrap();
-        let second_path_segment = segment_iterator.next().unwrap();
-
-        match first_path_segment {
-            "sdfObject" => {
-                let sdf_objects = self.sdf_object.unwrap();
-
-                let sdf_object = sdf_objects.get(second_path_segment).unwrap();
-
-                // TODO: Start recursion here
-
-                JsonPointerResolutionResult::SdfObject(sdf_object.clone())
-            }
-            _ => {
-                panic!();
-            }
-        }
-    }
+// TODO: Move to utils
+pub fn none_extra<'de, D>(deserializer: D) -> Result<Option<HashMap<String, Value>>, D::Error>
+where
+    D: serde::de::Deserializer<'de>,
+{
+    let s = HashMap::deserialize(deserializer)?;
+    Ok((s.len() != 0).then_some(s))
 }
 
 #[cfg(test)]
